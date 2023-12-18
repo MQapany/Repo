@@ -1,0 +1,64 @@
+@startuml
+
+title Software Architecture Diagram
+
+! Front-End Layer
+
+rectangle FrontEnd "2 VMs + Apache Load Balancer" {
+    rectangle ui "User Interface"
+}
+
+! API Gateway
+
+rectangle APIGateway "Single Entry Point" {
+    FrontEnd -> APIGateway : API Requests
+}
+
+! Backend Microservices Layer
+
+rectangle Backend "2 VMs" {
+
+    rectangle Login "SSO Node (AD)" {
+        APIGateway -> Login : Authentication
+        Login -> DB : Store User Data
+    }
+
+    rectangle BusinessLogic "Core Logic & Logging" {
+        APIGateway -> BusinessLogic : API Requests
+        BusinessLogic -> DB : Store/Retrieve Data
+    }
+
+    rectangle CreateOrder "SAP Hybris Integration" {
+        APIGateway -> CreateOrder : Order Create/Manage
+        CreateOrder -> SAPHybris : Order Data Exchange
+    }
+
+    rectangle SendNotification "Mail Server" {
+        APIGateway -> SendNotification : Notification Requests
+        SendNotification -> MailServer : Send Emails
+    }
+
+    rectangle BillingODS "Middleware (DMZ)" {
+        Backend -> BillingODS : Billing/ODS Access
+        BillingODS -> Backend : Response data
+    }
+
+}
+
+! Database
+
+rectangle DB "Centralized Data Storage" {
+    Login, BusinessLogic, CreateOrder, SendNotification, BillingODS <--> DB : Data Access
+}
+
+! External Systems
+
+rectangle ExtSystems "External Systems" {
+    rectangle SSO "SSO Node (AD)"
+    rectangle SAP "SAP Hybris"
+    rectangle Mail "Mail Server"
+}
+
+Backend <--> ExtSystems : External Integrations
+
+@enduml
